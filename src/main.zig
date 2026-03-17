@@ -72,15 +72,16 @@ pub fn main() anyerror!void {
     rl.setTargetFPS(FPS); 
 
     var gui_time: f32 = 0;
-    
     var rectangle_size: SizeType = .{
         .h = null,
         .w = null 
     };
+    
+    var stop: bool = false;
 
     while (!rl.windowShouldClose()) { 
         const delta_time = rl.getFrameTime();
-        gui_time += delta_time;
+        gui_time += if(stop) 0 else delta_time ;
         
         const float_time: f32 = @max(@as(f32, @floatFromInt(time_second)) - gui_time, 0);
         const int_time: u32 = @intFromFloat(@ceil(float_time));
@@ -105,12 +106,14 @@ pub fn main() anyerror!void {
         }
 
         const rectangle_position = utils.guiUtils.calculateCenter(rectangle_size.w.?, rectangle_size.h.?);
+        
+        // Keyboard events handle
+        if (rl.isKeyPressed(.space) or rl.isKeyPressed(.p)) stop = !stop;
 
         rl.beginDrawing();
         
         // Timer
         rl.drawText(timer_str, @as(i32, @intFromFloat(text_position.x)), @as(i32, @intFromFloat(text_position.y)), 60, .light_gray);
-
     
         const rx_int:i32  = @intFromFloat(rectangle_position.x);
         const ry_int:i32  = @intFromFloat(rectangle_position.y);
@@ -118,7 +121,6 @@ pub fn main() anyerror!void {
         const rh_int:i32  = @intFromFloat(rectangle_size.h.?);
 
         const primeter:f32 = (@as(f32, @floatFromInt(rh_int)) + @as(f32, @floatFromInt(rw_int))) * 2;
-        // const primeter:f32 = @as(f32, @floatFromInt(rw_int));
         var progress_length:i32 = @intFromFloat(float_time/(@as(f32, @floatFromInt(time_second))) * primeter);
 
         
@@ -129,7 +131,6 @@ pub fn main() anyerror!void {
 
             const bottom_progress = @min(progress_length, rw_int);
             progress_length -= bottom_progress;
-
 
             const left_progress = @min(progress_length, rh_int);   
             progress_length -= left_progress;
@@ -143,7 +144,6 @@ pub fn main() anyerror!void {
                 ry_int,
                 .light_gray
             );
-
             rl.drawLine(
                 rx_int + rw_int,
                 ry_int,
@@ -151,7 +151,6 @@ pub fn main() anyerror!void {
                 ry_int + right_progress,
                 .light_gray
             );
-
             rl.drawLine(
                 rx_int + rw_int,
                 ry_int + rh_int,
@@ -159,7 +158,6 @@ pub fn main() anyerror!void {
                 ry_int + rh_int,
                 .light_gray
             );
-
             rl.drawLine(
                 rx_int,
                 ry_int + rh_int,
@@ -169,9 +167,7 @@ pub fn main() anyerror!void {
             );
 
         }
-
         defer rl.endDrawing();
-
         rl.clearBackground(.black);
     }
 }
