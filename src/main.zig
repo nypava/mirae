@@ -23,6 +23,18 @@ const ArgsType = struct {
 
 const time_units = [_]u8{'s', 'm', 'h'};
 
+fn textColor(second: u32, warning: bool)  rl.Color{
+    if (!warning) {
+        return .light_gray;
+    }
+
+    if (second % 2 == 0) {
+        return rl.Color{.r = 177, .g = 87, .b = 87, .a = 255};
+    } else {
+        return .light_gray;
+    }
+}
+
 fn argsParser(input: []const u8, args: *ArgsType, buffer: *[100]u8) !void {
     var is_int: bool = true;
 
@@ -78,11 +90,13 @@ pub fn main() anyerror!void {
     };
     
     var stop: bool = false;
+    var warning: bool = false;
 
     while (!rl.windowShouldClose()) { 
         const delta_time = rl.getFrameTime();
         gui_time += if(stop) 0 else delta_time ;
         
+        const f_time_second: f32 = @floatFromInt(time_second);
         const float_time: f32 = @max(@as(f32, @floatFromInt(time_second)) - gui_time, 0);
         const int_time: u32 = @intFromFloat(@ceil(float_time));
 
@@ -109,11 +123,16 @@ pub fn main() anyerror!void {
         
         // Keyboard events handle
         if (rl.isKeyPressed(.space) or rl.isKeyPressed(.p)) stop = !stop;
+        if (rl.isKeyPressed(.w))  warning = !warning;
+        
+        if (((f_time_second - float_time) / f_time_second) >= 0.8) {
+            warning = true;
+        }
 
         rl.beginDrawing();
-        
+
         // Timer
-        rl.drawText(timer_str, @as(i32, @intFromFloat(text_position.x)), @as(i32, @intFromFloat(text_position.y)), 60, .light_gray);
+        rl.drawText(timer_str, @as(i32, @intFromFloat(text_position.x)), @as(i32, @intFromFloat(text_position.y)), 60, textColor(seconds, warning));
     
         const rx_int:i32  = @intFromFloat(rectangle_position.x);
         const ry_int:i32  = @intFromFloat(rectangle_position.y);
