@@ -26,7 +26,7 @@ const ArgsType = struct {
     alarm: bool
 };
 
-const LINE_WIDTH = 2;
+const LINE_WIDTH = 10;
 const FONT_SIZE = 80.0;
 const HELP_MESSAGE = 
     \\
@@ -158,7 +158,6 @@ pub fn main() anyerror!void {
 
 
     var user_ratio: f32 = 0;
-    var u_rect_scale: bool =  false;
 
     var stop: bool = false;
     var warning: bool = false;
@@ -172,10 +171,8 @@ pub fn main() anyerror!void {
             warning = !warning;
         } else if (rl.isKeyPressed(.kp_add)){
             user_ratio += 0.1;
-            u_rect_scale = true;
         } else if (rl.isKeyPressed(.minus)){
             user_ratio -= 0.1;
-            u_rect_scale = true;
         } else if (rl.isKeyPressed(.r)) {
             gui_time = 0;
         }
@@ -207,21 +204,13 @@ pub fn main() anyerror!void {
         const text_size = rl.measureTextEx(try rl.getFontDefault(), timer_str, font_size, 6 * screen_ratio);
         const text_position = utils.guiUtils.calculateCenter(text_size.x, text_size.y);
 
-        const rectangle_padding: SizeType = .{
-            .w = 100.0 * screen_ratio,
-            .h = 60.0 * screen_ratio,
-        };
+        // const rectangle_padding: SizeType = .{
+        //     .w = 100.0 * screen_ratio,
+        //     .h = 60.0 * screen_ratio,
+        // };
 
-        if (rectangle_size.h == null) {
-            rectangle_size.h = text_size.y + rectangle_padding.h.?;
-            rectangle_size.w = text_size.x + rectangle_padding.w.?;
-        }
-
-        if (rl.isWindowResized() or u_rect_scale) {
-            u_rect_scale = false;
-            rectangle_size.h = text_size.y + rectangle_padding.h.?;
-            rectangle_size.w = text_size.x + rectangle_padding.w.?;
-        }
+        rectangle_size.h = @floatFromInt(rl.getScreenHeight());
+        rectangle_size.w = @floatFromInt(rl.getScreenWidth());
 
         const rectangle_position = utils.guiUtils.calculateCenter(rectangle_size.w.?, rectangle_size.h.?);
 
