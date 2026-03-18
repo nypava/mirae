@@ -140,7 +140,7 @@ pub fn main() anyerror!void {
             
         // const size_ratio = 0;
         const font_size = 60.0 * screen_ratio;
-        const text_size = rl.measureTextEx(try rl.getFontDefault(), timer_str, font_size, 6);
+        const text_size = rl.measureTextEx(try rl.getFontDefault(), timer_str, font_size, 6 * screen_ratio);
         const text_position = utils.guiUtils.calculateCenter(text_size.x, text_size.y);
 
         const rectangle_padding: SizeType = .{
