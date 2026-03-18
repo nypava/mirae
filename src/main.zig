@@ -131,21 +131,29 @@ pub fn main() anyerror!void {
             rl.updateMusicStream(try alarm_audio);
         }
 
+        const screen_ratio:f32 =  @as(f32, @floatFromInt(rl.getScreenWidth())) / 600.0; 
         var buffer: [32]u8 = undefined;
         const hours: u32 = int_time / 3600;
         const minutes: u32 = (int_time % 3600) / 60;
         const seconds: u32 = int_time % 60;
         const timer_str = try std.fmt.bufPrintZ(&buffer, "{:02}:{:02}:{:02}", .{ hours, minutes, seconds });
-
-        const text_size = rl.measureTextEx(try rl.getFontDefault(), timer_str, 60, 6);
+            
+        // const size_ratio = 0;
+        const font_size = 60.0 * screen_ratio;
+        const text_size = rl.measureTextEx(try rl.getFontDefault(), timer_str, font_size, 6);
         const text_position = utils.guiUtils.calculateCenter(text_size.x, text_size.y);
 
         const rectangle_padding: SizeType = .{
-            .w = 100,
-            .h = 60,
+            .w = 100.0 * screen_ratio,
+            .h = 60.0 * screen_ratio,
         };
 
         if (rectangle_size.h == null) {
+            rectangle_size.h = text_size.y + rectangle_padding.h.?;
+            rectangle_size.w = text_size.x + rectangle_padding.w.?;
+        }
+
+        if (rl.isWindowResized()) {
             rectangle_size.h = text_size.y + rectangle_padding.h.?;
             rectangle_size.w = text_size.x + rectangle_padding.w.?;
         }
@@ -154,12 +162,11 @@ pub fn main() anyerror!void {
 
         rl.beginDrawing();
 
-        // Timer
         rl.drawText(
             timer_str, 
             @as(i32, @intFromFloat(text_position.x)), 
             @as(i32, @intFromFloat(text_position.y)), 
-            60, 
+            @as(i32, @intFromFloat(font_size)),
             textColor(seconds, warning)
         );
 
