@@ -26,6 +26,9 @@ const ArgsType = struct {
     alarm: bool
 };
 
+const LINE_WIDTH = 2;
+const FONT_SIZE = 60.0;
+
 const options = .{.alarm = "-a"};
 const time_units = [_]u8{'s', 'm', 'h'};
 
@@ -139,7 +142,7 @@ pub fn main() anyerror!void {
         const timer_str = try std.fmt.bufPrintZ(&buffer, "{:02}:{:02}:{:02}", .{ hours, minutes, seconds });
             
         // const size_ratio = 0;
-        const font_size = 60.0 * screen_ratio;
+        const font_size = FONT_SIZE * screen_ratio;
         const text_size = rl.measureTextEx(try rl.getFontDefault(), timer_str, font_size, 6 * screen_ratio);
         const text_position = utils.guiUtils.calculateCenter(text_size.x, text_size.y);
 
@@ -170,10 +173,12 @@ pub fn main() anyerror!void {
             textColor(seconds, warning)
         );
 
-        const rx_int:i32  = @intFromFloat(rectangle_position.x);
-        const ry_int:i32  = @intFromFloat(rectangle_position.y);
-        const rw_int:i32  = @intFromFloat(rectangle_size.w.?);
-        const rh_int:i32  = @intFromFloat(rectangle_size.h.?);
+        const rx:f32  = rectangle_position.x;
+        const ry:f32  = rectangle_position.y;
+        const rw:f32  = rectangle_size.w.?;
+        const rh:f32  = rectangle_size.h.?;
+        const rw_int:i32  =  @intFromFloat(@ceil(rw));
+        const rh_int:i32  =  @intFromFloat(@ceil(rh));
 
         const primeter:f32 = (@as(f32, @floatFromInt(rh_int)) + @as(f32, @floatFromInt(rw_int))) * 2;
         var progress_length:i32 = @intFromFloat(float_time/(@as(f32, @floatFromInt(time_second))) * primeter);
@@ -191,32 +196,28 @@ pub fn main() anyerror!void {
 
             const top_progress = @min(progress_length, rw_int);
 
-            rl.drawLine(
-                rx_int,
-                ry_int,
-                rx_int + top_progress,
-                ry_int,
+            rl.drawLineEx(
+                .{.x = rx, .y = ry},
+                .{.x = rx + @as(f32, @floatFromInt(top_progress)), .y = ry},
+                LINE_WIDTH * screen_ratio,
                 .light_gray
             );
-            rl.drawLine(
-                rx_int + rw_int,
-                ry_int,
-                rx_int + rw_int,
-                ry_int + right_progress,
+            rl.drawLineEx(
+                .{.x = rx + rw - (1 * screen_ratio), .y = ry},
+                .{.x = rx + rw - (1 * screen_ratio), .y = ry + @as(f32, @floatFromInt(right_progress))},
+                LINE_WIDTH * screen_ratio,
                 .light_gray
             );
-            rl.drawLine(
-                rx_int + rw_int,
-                ry_int + rh_int,
-                rx_int + rw_int - bottom_progress,
-                ry_int + rh_int,
+            rl.drawLineEx(
+                .{.x = rx + rw, .y = ry + rh},
+                .{.x = rx + rw - @as(f32, @floatFromInt(bottom_progress)), .y = ry + rh},
+                LINE_WIDTH * screen_ratio,
                 .light_gray
             );
-            rl.drawLine(
-                rx_int,
-                ry_int + rh_int,
-                rx_int,
-                ry_int + rh_int - left_progress,
+            rl.drawLineEx(
+                .{.x = rx + (1 * screen_ratio), .y = ry + rh},
+                .{.x = rx + (1 * screen_ratio), .y = ry + rh - @as(f32, @floatFromInt(left_progress))},
+                LINE_WIDTH * screen_ratio,
                 .light_gray
             );
 
