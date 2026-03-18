@@ -77,7 +77,7 @@ pub fn main() anyerror!void {
 
     var timer_args: TimerArgsType = .{
         .unit = 's',
-        .value = "",
+        .value = "0",
     };
 
     var parsed_args: ArgsType = .{
@@ -139,7 +139,9 @@ pub fn main() anyerror!void {
         const delta_time = rl.getFrameTime();
         gui_time += if(stop) 0 else delta_time ;
 
-        const float_time: f32 = @max(@as(f32, @floatFromInt(time_second)) - gui_time, 0);
+        const float_time: f32 = if (time_second != 0) @max(@as(f32, @floatFromInt(time_second)) - gui_time, 0)
+                                else gui_time;
+
         const int_time: u32 = @intFromFloat(@ceil(float_time));
 
         if (((f_time_second - float_time) / f_time_second) >= 0.8) {
@@ -197,7 +199,9 @@ pub fn main() anyerror!void {
         const rh_int:i32  =  @intFromFloat(@ceil(rh));
 
         const primeter:f32 = (@as(f32, @floatFromInt(rh_int)) + @as(f32, @floatFromInt(rw_int))) * 2;
-        var progress_length:i32 = @intFromFloat(float_time/(@as(f32, @floatFromInt(time_second))) * primeter);
+
+        var progress_length:i32 = if(time_second > 0) @intFromFloat(float_time/(@as(f32, @floatFromInt(time_second))) * primeter)
+                                  else 0;
 
         // Progress rectangle
         if (progress_length > 0) {
