@@ -16,11 +16,17 @@ const SizeType = struct {
     h: ?f32,
 };
 
-const ArgsType = struct {
+const TimerArgsType = struct {
     unit: u8,
     value: []const u8,
 };
 
+const ArgsType = struct {
+    time: *TimerArgsType,
+    alarm: bool
+};
+
+const options = .{.alarm = "-a"};
 const time_units = [_]u8{'s', 'm', 'h'};
 
 fn textColor(second: u32, warning: bool)  rl.Color{
@@ -43,14 +49,19 @@ fn argsParser(input: []const u8, args: *ArgsType, buffer: *[100]u8) !void {
     _ =  std.fmt.parseInt(u32, buffer[0..f_len], 10) catch {
         is_int = false;
     };
-    
+   
+    if (std.mem.eql(u8, input, options.alarm)) {
+        args.alarm = true;
+        return;
+    }
+
     if (is_int) {
-        args.value = input;
+        args.time.value = input;
         return;
     } else {
         for (time_units) |unit| {
             if (input[0] == unit ) {
-                args.unit = input[0];
+                args.time.unit = input[0];
                 return;
             }
         }
@@ -60,19 +71,28 @@ fn argsParser(input: []const u8, args: *ArgsType, buffer: *[100]u8) !void {
 pub fn main() anyerror!void {
     var args = std.process.args();
     _ = args.next();
-    
-    // var input_time: u32 = 0;
-    var timer_args: ArgsType = .{
+
+    var timer_args: TimerArgsType = .{
         .unit = 's',
         .value = "",
     };
 
+    var parsed_args: ArgsType = .{
+        .time = &timer_args,
+        .alarm = false,
+    };
+
     while (args.next()) |arg| {
         var buffer: [100]u8 = undefined;
-        try argsParser(arg, &timer_args,  &buffer);
+        try argsParser(arg, &parsed_args,  &buffer);
     }
-    
+
     const time_second:u32 = try utils.calculateTime(timer_args.value, timer_args.unit);
+    const f_time_second: f32 = @floatFromInt(time_second);
+
+    rl.initAudioDevice();
+    const alarm_audio = rl.loadMusicStream("asset/alarm_sound.wav");
+    rl.playMusicStream(try alarm_audio);
 
     // GUI 
     const screenWidth = 600;
@@ -88,17 +108,28 @@ pub fn main() anyerror!void {
         .h = null,
         .w = null 
     };
-    
+
     var stop: bool = false;
     var warning: bool = false;
 
     while (!rl.windowShouldClose()) { 
+        // Keyboard events handle
+        if (rl.isKeyPressed(.space) or rl.isKeyPressed(.p)) stop = !stop;
+        if (rl.isKeyPressed(.w))  warning = !warning;
+
         const delta_time = rl.getFrameTime();
         gui_time += if(stop) 0 else delta_time ;
-        
-        const f_time_second: f32 = @floatFromInt(time_second);
+
         const float_time: f32 = @max(@as(f32, @floatFromInt(time_second)) - gui_time, 0);
         const int_time: u32 = @intFromFloat(@ceil(float_time));
+
+        if (((f_time_second - float_time) / f_time_second) >= 0.8) {
+            warning = true;
+        }
+
+        if (int_time == 0 and parsed_args.alarm) {
+            rl.updateMusicStream(try alarm_audio);
+        }
 
         var buffer: [32]u8 = undefined;
         const hours: u32 = int_time / 3600;
@@ -108,7 +139,7 @@ pub fn main() anyerror!void {
 
         const text_size = rl.measureTextEx(try rl.getFontDefault(), timer_str, 60, 6);
         const text_position = utils.guiUtils.calculateCenter(text_size.x, text_size.y);
-    
+
         const rectangle_padding: SizeType = .{
             .w = 100,
             .h = 60,
@@ -120,20 +151,18 @@ pub fn main() anyerror!void {
         }
 
         const rectangle_position = utils.guiUtils.calculateCenter(rectangle_size.w.?, rectangle_size.h.?);
-        
-        // Keyboard events handle
-        if (rl.isKeyPressed(.space) or rl.isKeyPressed(.p)) stop = !stop;
-        if (rl.isKeyPressed(.w))  warning = !warning;
-        
-        if (((f_time_second - float_time) / f_time_second) >= 0.8) {
-            warning = true;
-        }
 
         rl.beginDrawing();
 
         // Timer
-        rl.drawText(timer_str, @as(i32, @intFromFloat(text_position.x)), @as(i32, @intFromFloat(text_position.y)), 60, textColor(seconds, warning));
-    
+        rl.drawText(
+            timer_str, 
+            @as(i32, @intFromFloat(text_position.x)), 
+            @as(i32, @intFromFloat(text_position.y)), 
+            60, 
+            textColor(seconds, warning)
+        );
+
         const rx_int:i32  = @intFromFloat(rectangle_position.x);
         const ry_int:i32  = @intFromFloat(rectangle_position.y);
         const rw_int:i32  = @intFromFloat(rectangle_size.w.?);
@@ -142,7 +171,6 @@ pub fn main() anyerror!void {
         const primeter:f32 = (@as(f32, @floatFromInt(rh_int)) + @as(f32, @floatFromInt(rw_int))) * 2;
         var progress_length:i32 = @intFromFloat(float_time/(@as(f32, @floatFromInt(time_second))) * primeter);
 
-        
         // Progress rectangle
         if (progress_length > 0) {
             const right_progress = @min(progress_length, rh_int);
