@@ -28,8 +28,33 @@ const ArgsType = struct {
 
 const LINE_WIDTH = 2;
 const FONT_SIZE = 80.0;
+const HELP_MESSAGE = 
+    \\
+    \\ Mirae - simple timer / stopwatch 
+    \\ 
+    \\ Usage: 
+    \\  mirae [time] [unit] [options]
+    \\ 
+    \\ Time formats
+    \\  mirae HH:MM:SS          set timer using full format
+    \\  mirae HH:MM h           set timer in hour and minute
+    \\  mirae MM:SS [m]         set timer in minute and second
+    \\  mirae <value> [s|m|h]   set timer with unit (second, minute, hour) 
+    \\ 
+    \\ Stopwatch Mode
+    \\  mirae                   if no <time> is provided, mirae runs as stop watch mode
+    \\
+    \\ Options
+    \\  -a, --alarm      play alarm sound when time is up 
+    \\  -h, --help    Show this help message
+    \\
+;
 
-const options = .{.alarm = "-a"};
+const options = .{
+    .alarm = .{"-a", "--alarm"},
+    .help = .{"--help", "-h"}
+};
+
 const time_units = [_]u8{'s', 'm', 'h'};
 
 fn textColor(second: u32, warning: bool)  rl.Color{
@@ -44,7 +69,15 @@ fn textColor(second: u32, warning: bool)  rl.Color{
     }
 }
 
+fn printString(str: []const u8) !void {
+    var buf: [4096]u8 = undefined;
+    var stdout = std.fs.File.stdout().writer(&buf);
+    stdout.interface.print("{s}", .{str}) catch return stdout.err.?;
+    stdout.interface.flush() catch return stdout.err.?;
+}
+
 fn argsParser(input: []const u8, args: *ArgsType, buffer: *[100]u8) !void {
+
     var is_int: bool = true;
 
     const f_len = utils.removeFromString(input, ':',  buffer);
@@ -53,11 +86,16 @@ fn argsParser(input: []const u8, args: *ArgsType, buffer: *[100]u8) !void {
         is_int = false;
     };
    
-    if (std.mem.eql(u8, input, options.alarm)) {
+    if (std.mem.eql(u8, input, options.alarm[0]) or std.mem.eql(u8, input, options.alarm[1])) {
         args.alarm = true;
         return;
     }
 
+    if (std.mem.eql(u8, input, options.help[0]) or std.mem.eql(u8, input, options.help[1])) {
+        try printString(HELP_MESSAGE);
+        std.process.exit(0);
+        return;
+    }
     if (is_int) {
         args.time.value = input;
         return;
@@ -69,6 +107,12 @@ fn argsParser(input: []const u8, args: *ArgsType, buffer: *[100]u8) !void {
             }
         }
     }
+
+    try printString("Invalid argument ");
+    try printString(input);
+    try printString(HELP_MESSAGE);
+    std.process.exit(0);
+    return;
 }
 
 pub fn main() anyerror!void {
