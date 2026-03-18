@@ -112,13 +112,26 @@ pub fn main() anyerror!void {
         .w = null 
     };
 
+
+    var user_ratio: f32 = 0;
+    var u_rect_scale: bool =  false;
+
     var stop: bool = false;
     var warning: bool = false;
 
     while (!rl.windowShouldClose()) { 
+    
         // Keyboard events handle
         if (rl.isKeyPressed(.space) or rl.isKeyPressed(.p)) stop = !stop;
         if (rl.isKeyPressed(.w))  warning = !warning;
+        if (rl.isKeyPressed(.kp_add)){
+            user_ratio += 0.1;
+            u_rect_scale = true;
+        }   
+        if (rl.isKeyPressed(.minus)){
+            user_ratio -= 0.1;
+            u_rect_scale = true;
+        }
 
         const delta_time = rl.getFrameTime();
         gui_time += if(stop) 0 else delta_time ;
@@ -133,15 +146,14 @@ pub fn main() anyerror!void {
         if (int_time == 0 and parsed_args.alarm) {
             rl.updateMusicStream(try alarm_audio);
         }
-
-        const screen_ratio:f32 =  @as(f32, @floatFromInt(rl.getScreenWidth())) / 600.0; 
+        
+        const screen_ratio: f32 =  @as(f32, @floatFromInt(rl.getScreenWidth())) / 600.0 + user_ratio;  
         var buffer: [32]u8 = undefined;
         const hours: u32 = int_time / 3600;
         const minutes: u32 = (int_time % 3600) / 60;
         const seconds: u32 = int_time % 60;
         const timer_str = try std.fmt.bufPrintZ(&buffer, "{:02}:{:02}:{:02}", .{ hours, minutes, seconds });
             
-        // const size_ratio = 0;
         const font_size = FONT_SIZE * screen_ratio;
         const text_size = rl.measureTextEx(try rl.getFontDefault(), timer_str, font_size, 6 * screen_ratio);
         const text_position = utils.guiUtils.calculateCenter(text_size.x, text_size.y);
@@ -156,7 +168,8 @@ pub fn main() anyerror!void {
             rectangle_size.w = text_size.x + rectangle_padding.w.?;
         }
 
-        if (rl.isWindowResized()) {
+        if (rl.isWindowResized() or u_rect_scale) {
+            u_rect_scale = false;
             rectangle_size.h = text_size.y + rectangle_padding.h.?;
             rectangle_size.w = text_size.x + rectangle_padding.w.?;
         }
