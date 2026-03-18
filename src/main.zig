@@ -27,7 +27,7 @@ const ArgsType = struct {
 };
 
 const LINE_WIDTH = 2;
-const FONT_SIZE = 60.0;
+const FONT_SIZE = 80.0;
 
 const options = .{.alarm = "-a"};
 const time_units = [_]u8{'s', 'm', 'h'};
@@ -122,15 +122,18 @@ pub fn main() anyerror!void {
     while (!rl.windowShouldClose()) { 
     
         // Keyboard events handle
-        if (rl.isKeyPressed(.space) or rl.isKeyPressed(.p)) stop = !stop;
-        if (rl.isKeyPressed(.w))  warning = !warning;
-        if (rl.isKeyPressed(.kp_add)){
+        if (rl.isKeyPressed(.space) or rl.isKeyPressed(.p)){
+            stop = !stop;
+        } else if (rl.isKeyPressed(.w)) {
+            warning = !warning;
+        } else if (rl.isKeyPressed(.kp_add)){
             user_ratio += 0.1;
             u_rect_scale = true;
-        }   
-        if (rl.isKeyPressed(.minus)){
+        } else if (rl.isKeyPressed(.minus)){
             user_ratio -= 0.1;
             u_rect_scale = true;
+        } else if (rl.isKeyPressed(.r)) {
+            gui_time = 0;
         }
 
         const delta_time = rl.getFrameTime();
