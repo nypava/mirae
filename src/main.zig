@@ -23,7 +23,8 @@ const TimerArgsType = struct {
 
 const ArgsType = struct {
     time: *TimerArgsType,
-    alarm: bool
+    alarm: bool,
+    warning: bool
 };
 
 const LINE_WIDTH = 10;
@@ -45,13 +46,15 @@ const HELP_MESSAGE =
     \\  mirae                   if no <time> is provided, mirae runs as stop watch mode
     \\
     \\ Options
-    \\  -a, --alarm      play alarm sound when time is up 
-    \\  -h, --help    Show this help message
+    \\  -a, --alarm     play alarm sound when time is up 
+    \\  -w, --warning   color change to blinking on finale time
+    \\  -h, --help      Show this help message
     \\
 ;
 
 const options = .{
     .alarm = .{"-a", "--alarm"},
+    .warning = .{"-w", "--warning"},
     .help = .{"--help", "-h"}
 };
 
@@ -91,6 +94,11 @@ fn argsParser(input: []const u8, args: *ArgsType, buffer: *[100]u8) !void {
         return;
     }
 
+    if (std.mem.eql(u8, input, options.warning[0]) or std.mem.eql(u8, input, options.warning[1])) {
+        args.warning = true;
+        return;
+    }
+
     if (std.mem.eql(u8, input, options.help[0]) or std.mem.eql(u8, input, options.help[1])) {
         try printString(HELP_MESSAGE);
         std.process.exit(0);
@@ -126,6 +134,7 @@ pub fn main() anyerror!void {
 
     var parsed_args: ArgsType = .{
         .time = &timer_args,
+        .warning = false,
         .alarm = false,
     };
 
@@ -161,7 +170,7 @@ pub fn main() anyerror!void {
 
     var stop: bool = false;
     var warning: bool = false;
-
+    
     while (!rl.windowShouldClose()) { 
     
         // Keyboard events handle
@@ -204,11 +213,6 @@ pub fn main() anyerror!void {
         const text_size = rl.measureTextEx(try rl.getFontDefault(), timer_str, font_size, 6 * screen_ratio);
         const text_position = utils.guiUtils.calculateCenter(text_size.x, text_size.y);
 
-        // const rectangle_padding: SizeType = .{
-        //     .w = 100.0 * screen_ratio,
-        //     .h = 60.0 * screen_ratio,
-        // };
-
         rectangle_size.h = @floatFromInt(rl.getScreenHeight());
         rectangle_size.w = @floatFromInt(rl.getScreenWidth());
 
@@ -221,7 +225,7 @@ pub fn main() anyerror!void {
             @as(i32, @intFromFloat(text_position.x)), 
             @as(i32, @intFromFloat(text_position.y)), 
             @as(i32, @intFromFloat(font_size)),
-            textColor(seconds, warning)
+            textColor(seconds, if (parsed_args.warning) warning else false)
         );
 
         const rx:f32  = rectangle_position.x;
