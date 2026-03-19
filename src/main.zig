@@ -4,6 +4,8 @@ const utils = @import("utils/root.zig");
 
 const print = std.debug.print;
 
+const alarm_audio = @embedFile("./asset/alarm_sound.wav");
+
 const FPS = 60;
 
 const PositionType = struct {
@@ -147,8 +149,8 @@ pub fn main() anyerror!void {
     const f_time_second: f32 = @floatFromInt(time_second);
 
     rl.initAudioDevice();
-    const alarm_audio = rl.loadMusicStream("asset/alarm_sound.wav");
-    rl.playMusicStream(try alarm_audio);
+    const r_alarm_audio = rl.loadMusicStreamFromMemory(".wav", alarm_audio);
+    rl.playMusicStream(try r_alarm_audio);
 
     // GUI 
     const screenWidth = 600;
@@ -199,7 +201,7 @@ pub fn main() anyerror!void {
         }
 
         if (int_time == 0 and parsed_args.alarm) {
-            rl.updateMusicStream(try alarm_audio);
+            rl.updateMusicStream(try r_alarm_audio);
         }
         
         const screen_ratio: f32 =  @as(f32, @floatFromInt(rl.getScreenWidth())) / 600.0 + user_ratio;  
